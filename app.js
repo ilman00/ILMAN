@@ -5,8 +5,11 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const cors = require("cors");
-const jwt = require("jsonwebtoken")
+// const jwt = require("jsonwebtoken")
 const bcrypt = require("bcrypt")
+const session = require("express-session")
+const passport = require("passport")
+const passportLocalMongoose = require("passport-local-mongoose")
 
 const app = express();
 
@@ -15,6 +18,17 @@ const SECRET_KEY = process.env.SECRET_KEY;
 app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
+
+
+
+app.use(session({
+    secret: process.env.SECRET_KEY,
+    resave: false,
+    saveUninitialized: false
+})); 
+
+app.use(passport.initialize());
+app.use(passport.session()); 
 
 const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
 
@@ -49,14 +63,14 @@ const userSchema = new mongoose.Schema({
     email: String
 });
 
-// userSchema.plugin(passportLocalMongoose);
+userSchema.plugin(passportLocalMongoose);
 
 
 const User = new mongoose.model("User", userSchema);
 
-// passport.use(User.createStrategy());
-// passport.serializeUser(User.serializeUser());
-// passport.deserializeUser(User.deserializeUser())
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser())
 
 
 
@@ -76,7 +90,7 @@ const Exercise = mongoose.model('Exercise', exerciseSchema);
 const textQuestionSchema = new mongoose.Schema({
     question: String,
     answer: String,
-    chapterId: { _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' } }
+    chapterCode: String
 });
 
 
@@ -84,7 +98,7 @@ const contentSchema = new mongoose.Schema({
     text: String,
     img: String,
     video: String,
-    chapterId: { _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' } } // Reference to the chapter
+    chapterCode: String  // Reference to the chapter
 });
 
 const Content = mongoose.model('Content', contentSchema);
@@ -138,64 +152,55 @@ const authenticateJWT = (req, res, next) => {
 
 // Registring a User
 app.post('/register', async (req, res) => {
-    const { username, password, email } = req.body;
-
-    const userExist = await User.findOne({ username: username });
-
-    if (userExist) {
-        return res.status(400).json({ message: "User Already Exist" });
-    }
-
-    try {
-        const hashPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({
-            username: username,
-            password: hashPassword,
-            email: email
-        });
-
-        await newUser.save();
-
-        res.status(201).json({ message: "User Registered Successfully" });
-
-    } catch (err) {
-        res.status(500).json({ message: "Error inserting Data", Error: err });
-    }
-});
-
-// loging In users API
-app.post('/login', async (req, res, next) => {
     const { username, password } = req.body;
 
     try {
+        const user = new User({ username });
+        await User.register(user, password);
 
-
-
-        const user = await User.findOne({ username: username });
-
-        if (!user) {
-            return res.status(400).json({ message: "User not existed" });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            return res.status(400).json({ message: "invalid cedentials" });
-        }
-
-        const accessToken = jwt.sign({ id: user._id }, process.env.SECRET_KEY, { expiresIn: "1h" });
-
-        const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET_KEY, { expiresIn: "30d" })
-
-        user.refreshToken = refreshToken;
-        await user.save();
-
-        res.status(200).json({ accessToken, refreshToken });
+        req.login(user, (err) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Login failed after registration', error: err.message });
+            }
+            return res.status(200).json({ success: true, message: 'User registered and logged in successfully', user: { username: user.username } });
+        });
     } catch (err) {
-        res.status(500).json({ message: "Server error", error: err });
+        // Check if the error is due to duplicate username
+        if (err.name === 'UserExistsError') {
+            return res.status(400).json({ success: false, message: 'Username already exists. Please choose another one.' });
+        }
+        // For any other errors
+        res.status(400).json({ success: false, message: 'Error registering user', error: err.message });
     }
-
 });
+
+
+// loging In users API
+app.post('/login', (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
+        }
+        if (!user) {
+            // If authentication fails, user will be null
+            return res.status(401).json({ success: false, message: 'Invalid username or password' });
+        }
+        // Log in the user
+        req.logIn(user, (err) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Login failed', error: err.message });
+            }
+            // If login is successful, send success response with user details
+            return res.status(200).json({ success: true, message: 'Login successful', user: { username: user.username } });
+        });
+    })(req, res, next);
+});
+
+
+
+
+
+
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/course.html");
@@ -261,11 +266,11 @@ app.get("/api/:subjectCode/chapter/data", async (req, res) => {
 });
 
 // Retrieving Exercise From database
-app.get("/api/:chapterId/exercise/data", async (req, res) => {
+app.get("/api/:chapterCode/exercise/data", async (req, res) => {
     try {
-        const chapterId = req.params.chapterId;
+        const chapterCode = req.params.chapterCode;
 
-        const chapterExercise = await Exercise.find({ chapterId: chapterId });
+        const chapterExercise = await Exercise.find({ chapterCode: chapterCode });
 
         if (!chapterExercise) {
             return res.status(404).json({ Error: "Error Retreiving Data From database" })
@@ -370,6 +375,7 @@ app.post("/api/:chapterCode/content/data", uploadFields, async (req, res) => {
             text: req.body.text,
             img: req.files.image ? req.files.image[0].path : undefined,
             video: req.files.video ? req.files.video[0].path : undefined,
+            chapterCode: chapterCode
         });
 
         console.log(newContent);
@@ -440,9 +446,9 @@ app.post("/api/:chapterId/wordMeaning/data", async (req, res) => {
 
 
 // Saving Exercise Data from Database
-app.post("/api/:chapterId/exercise/data", async (req, res) => {
+app.post("/api/:chapterCode/exercise/data", async (req, res) => {
     try {
-        const chapterId = req.params.chapterId;
+        const chapterCode = req.params.chapterCode;
 
         const newExercise = new Exercise({
             question: req.body.question,
@@ -453,7 +459,7 @@ app.post("/api/:chapterId/exercise/data", async (req, res) => {
                 option4: req.body.option4
             },
             correctOption: req.body.correctOption,
-            chapterId: chapterId
+            chapterId: chapterCode
         });
         console.log(newExercise);
 
@@ -507,6 +513,6 @@ app.delete("/api/:subCode/chapter/:chapterId", async (req, res) => {
 
 
 
-app.listen(process.env.PORT || 3000, () => {
+app.listen(3000, () => {
     console.log(`Server running on 3000`);
 });
