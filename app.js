@@ -5,8 +5,15 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const cors = require("cors");
-const jwt = require("jsonwebtoken")
-const bcrypt = require("bcrypt")
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const Subject = require("./models/subjectModel");
+const Exercise = require("./models/exerciseModel");
+const Content = require("./models/contentModel");
+const Chapter = require("./models/chapterModel")
+const { postSubject } = require("./routes/postSubject");
+const { getSubject } = require("./routes/getSubject");
+const { getChapter, postChapter} = require("./routes/getChapter");
 
 const app = express();
 
@@ -17,6 +24,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
+// const liveDBString = process.env.DATABASE_STRING;
 
 mongoose.connect(dbString);
 
@@ -58,36 +66,11 @@ const User = new mongoose.model("User", userSchema);
 // passport.serializeUser(User.serializeUser());
 // passport.deserializeUser(User.deserializeUser())
 
-
-
-const exerciseSchema = new mongoose.Schema({
-    question: String,
-    options: {
-        option1: String,
-        option2: String,
-        option3: String,
-        option4: String
-    },
-    correctOption: String,
-    chapterId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' } // Reference to the chapter
-});
-const Exercise = mongoose.model('Exercise', exerciseSchema);
-
 const textQuestionSchema = new mongoose.Schema({
     question: String,
     answer: String,
     chapterId: { _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' } }
 });
-
-
-const contentSchema = new mongoose.Schema({
-    text: String,
-    img: String,
-    video: String,
-    chapterId: { _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' } } // Reference to the chapter
-});
-
-const Content = mongoose.model('Content', contentSchema);
 
 const wordMeaningSchema = new mongoose.Schema({
     word: String,
@@ -98,25 +81,6 @@ const wordMeaningSchema = new mongoose.Schema({
 
 const WordMeaning = new mongoose.model("WordMeaning", wordMeaningSchema);
 
-const chapterSchema = new mongoose.Schema({
-    name: String,
-    chapterCode: String,
-    subjectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }, // Reference to the subject
-    contentIds: [{ _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Content' } }], // References to contents
-    exerciseIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exercise' }], // References to exercises
-    wordMeaningIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Exercise' }] // References to exercises
-});
-
-const Chapter = mongoose.model('Chapter', chapterSchema);
-
-const subjectSchema = new mongoose.Schema({
-    title: String,
-    class: String,
-    code: String,
-    chapters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }] // References to chapters
-});
-
-const Subject = mongoose.model('Subject', subjectSchema);
 
 const authenticateJWT = (req, res, next) => {
     const token = req.header("authorization");
@@ -203,62 +167,13 @@ app.get("/", (req, res) => {
 
 
 // Save Subject in Database
-app.post("/api/subject/data", async (req, res) => {
-    const newSubject = new Subject({
-        title: req.body.title,
-        class: req.body.class,
-        code: req.body.code
-    });
-
-    try {
-        const insertSubjectData = await newSubject.save();
-
-        if (!insertSubjectData) {
-            return res.status(500).json({ error: "Something went wrong inserting data" });
-        }
-
-        res.status(201).json(insertSubjectData);
-        console.log(insertSubjectData);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
-
-
-
+app.post("/api/subject/data", postSubject);
 
 // Retrieving subject from database
-app.get("/api/subject/data", async (req, res) => {
-    try {
-        const subjectData = await Subject.find({}, { title: 1, code: 1 });
-        if (!subjectData) {
-            return res.status(404).json("Data Not found");
-        }
-        res.json({ data: subjectData });
-
-    } catch (err) {
-        res.status(500).json("Error")
-    }
-});
+app.get("/api/subject/data", getSubject );
 
 // Retrieving chapter from database
-app.get("/api/:subjectCode/chapter/data", async (req, res) => {
-    try {
-        const subjectCode = req.params.subjectCode;
-        const subData = await Subject.findOne({ code: subjectCode }, { chapters: 1 });
-        if (!subData) {
-            return res.status(404).json("Data Not found");
-        }
-
-        const objectIds = subData.chapters.map(obj => obj._id);
-
-        const chapterData = await Chapter.find({ _id: { $in: objectIds } });
-        res.json(chapterData)
-    } catch (err) {
-        res.status(500).json("Error")
-    }
-});
+app.get("/api/:subjectCode/chapter/data", getChapter);
 
 // Retrieving Exercise From database
 app.get("/api/:chapterId/exercise/data", async (req, res) => {
@@ -318,42 +233,7 @@ app.get("/api/:chapterId/wordMeaning/data", async (req, res)=>{
 })
 
 // saving chapter data in database
-app.post("/api/:subCode/chapter/data", async (req, res) => {
-    try {
-        const subCode = req.params.subCode;
-        const name = req.body.chapName;
-        const chapterCode = req.body.chapterCode;
-
-        // Save the new chapter
-        const newChapter = new Chapter({
-            name: name,
-            chapterCode: chapterCode
-        });
-
-        const result = await newChapter.save();
-        console.log("Chapter saved:", result);
-
-        // Find the subject by code
-        const subResult = await Subject.findOne({ code: subCode });
-        console.log("Subject Result:", subResult);
-
-        if (!subResult) {
-            return res.status(404).json({ error: "Subject not found" });
-        }
-
-        // Add the chapter _id to the subject's chapters array
-        subResult.chapters.push({ _id: result._id });
-
-        // Save the updated subject
-        await subResult.save();
-
-        // Respond with the chapter and subject
-        res.json({ "Chapter Result": result, "Subject Result": subResult });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "An error occurred" });
-    }
-});
+app.post("/api/:subCode/chapter/data", postChapter);
 
 
 
