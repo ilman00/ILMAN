@@ -27,7 +27,8 @@ const postChapter = async (req, res)=>{
         // Save the new chapter
         const newChapter = new Chapter({
             name: name,
-            chapterCode: chapterCode
+            chapterCode: chapterCode,
+            subjectCode: subCode
         });
 
         const result = await newChapter.save();

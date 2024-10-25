@@ -23,10 +23,10 @@ app.use(cors())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
-// const liveDBString = process.env.DATABASE_STRING;
+// const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
+const liveDBString = process.env.DATABASE_STRING;
 
-mongoose.connect(dbString);
+mongoose.connect(liveDBString);
 
 
 const storage = multer.diskStorage({
