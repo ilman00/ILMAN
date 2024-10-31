@@ -12,26 +12,18 @@ const { postSubject } = require("./routes/postSubject");
 const { getSubject } = require("./routes/getSubject");
 const { getChapter, postChapter} = require("./routes/getChapter");
 const { getWordMeaning, postWordMeaning } = require("./routes/wordmeaning");
-const {logIn, register} =require("./routes/auth");
+const {logIn, register,  authenticateToken, logout} = require("./routes/auth");
 const {getContent, postContent} = require("./routes/contents");
-
-
 
 const app = express();
 
-const SECRET_KEY = process.env.SECRET_KEY;
-
-app.use(cors({
-    origin: "http://localhost:5173",
-    credentials: true 
-  }));
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
-// const liveDBString = process.env.DATABASE_STRING;
-
-mongoose.connect(dbString);
+// const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
+const liveDBString = process.env.DATABASE_STRING;
+mongoose.connect(liveDBString);
 
 
 const storage = multer.diskStorage({
@@ -63,26 +55,19 @@ const textQuestionSchema = new mongoose.Schema({
 });
 
 
-// Registring a User
 app.post('/register', register);
-
-// loging In users API
 app.post('/login', logIn);
+app.post("/logout", logout)
 
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/course.html");
 })
-
-
 // Save Subject in Database
 app.post("/api/subject/data", postSubject);
-
 // Retrieving subject from database
 app.get("/api/subject/data", getSubject );
-
 // Retrieving chapter from database
 app.get("/api/:subjectCode/chapter/data", getChapter);
-
 // Retrieving Exercise From database
 app.get("/api/:chapterId/exercise/data", async (req, res) => {
     try {
@@ -101,32 +86,22 @@ app.get("/api/:chapterId/exercise/data", async (req, res) => {
         res.status(500).json({ error: err });
     }
 })
-
-
 //  Retrieving Content Data from Database
-app.get("/api/:chapterCode/content/data", )
-
-
+app.get("/api/:chapterCode/content/data", getContent)
+// Getting Word Meaning
 app.get("/api/:chapterId/wordMeaning/data", getWordMeaning )
-
 // saving chapter data in database
 app.post("/api/:subCode/chapter/data", postChapter);
-
 
 
 const uploadFields = upload.fields([
     { name: 'image', maxCount: 1 }, // Accept 1 image file
     { name: 'video', maxCount: 1 }  // Accept 1 video file
 ]);
-
 // Saving Content Data in the database
-app.post("/api/:chapterCode/content/data", uploadFields, getContent);
-
+app.post("/api/:chapterCode/content/data", uploadFields, postContent);
 // Saving word Meaning of English Book in Database
-app.post("/api/:chapterCode/wordMeaning/data", postWordMeaning, postContent);
-
-
-
+app.post("/api/:chapterCode/wordMeaning/data", postWordMeaning);
 // Saving Exercise Data from Database
 app.post("/api/:chapterId/exercise/data", async (req, res) => {
     try {
@@ -157,7 +132,6 @@ app.post("/api/:chapterId/exercise/data", async (req, res) => {
         res.status(500).json("Error Saving Data in database")
     }
 })
-
 // deleting Chapter data from database
 app.delete("/api/:subCode/chapter/:chapterId", async (req, res) => {
     try {

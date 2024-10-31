@@ -1,5 +1,5 @@
 const Chapter = require("../models/chapterModel")
-const Content = require("./models/contentModel");
+const Content = require("../models/contentModel");
 
 
 
