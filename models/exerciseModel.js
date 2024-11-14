@@ -9,7 +9,7 @@ const exerciseSchema = new mongoose.Schema({
         option4: String
     },
     correctOption: String,
-    chapterId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' } // Reference to the chapter
+    chapterCode: String // Reference to the chapter
 });
 const Exercise = mongoose.model('Exercise', exerciseSchema);
 
