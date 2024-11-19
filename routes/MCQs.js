@@ -32,7 +32,7 @@ const postExercise =  async (req, res) => {
                 option4: req.body.option4
             },
             correctOption: req.body.correctOption,
-            chapterId: chapterCode
+            chapterCode: chapterCode
         });
         console.log(newExercise);
 
