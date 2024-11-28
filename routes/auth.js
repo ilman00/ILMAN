@@ -64,7 +64,10 @@ const register = async (req, res) => {
 
         res.cookie("accessToken", accessToken, { httpOnly: true, secure: true })
         res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true })
-        res.json({ user: newUser, message: "logged in successfully" });
+        res.json({
+            user: newUser, message: "logged in successfully",
+            accessToken: accessToken
+        });
 
 
     } catch (err) {
@@ -108,13 +111,14 @@ const logIn = async (req, res) => {
                     username: userData.username,
                     email: userData.email, // or other public fields you want to share
                 },
+                accessToken: accessToken
             });
         });
     } catch (err) {
         res.status(500).json({ Error: "Internal server error during login: " + err });
     }
 }
-const logout =  (req, res) => {
+const logout = (req, res) => {
     res.clearCookie("accessToken", { httpOnly: true, secure: true });
     res.json({ message: "User logged out successfully" });
 }
