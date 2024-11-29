@@ -3,14 +3,13 @@ const Chapter = require("../models/chapterModel")
 
 const getWordMeaning = async (req, res)=>{
     try{
-        const chapterId = req.params.chapterId;
+        const chapterCode = req.params.chapterId;
 
-        const wordMeaningData = await WordMeaning.find({chapterId: chapterId});
+        const wordMeaningData = await WordMeaning.find({chapterCode: chapterCode});
 
         if(!wordMeaningData){
             return res.status(400).json({Error: "No data found "});
         }
-
         res.json({data: wordMeaningData});
     }catch(err){
         res.status(500).json({Error: "An Error occurred"})

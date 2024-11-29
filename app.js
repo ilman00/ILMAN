@@ -16,6 +16,7 @@ const { getWordMeaning, postWordMeaning } = require("./routes/wordmeaning");
 const {logIn, register,  authenticateToken, logout} = require("./routes/auth");
 const {getContent, postContent} = require("./routes/contents");
 const { getExercise, postExercise } = require('./routes/MCQs');
+const {QAget, QApost} = require("./routes/QA")
 // const jwt = require("jsonwebtoken")
 
 
@@ -63,8 +64,7 @@ app.post("/logout", logout)
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/course.html");
 })
-// Save Subject in Database
-app.post("/api/subject/data", postSubject);
+
 // Retrieving subject from database
 app.get("/api/subject/data", getSubject );
 // Retrieving chapter from database
@@ -74,7 +74,17 @@ app.get("/api/:chapterCode/exercise/data", getExercise)
 //  Retrieving Content Data from Database
 app.get("/api/:chapterCode/content/data", getContent)
 // Getting Word Meaning
-app.get("/api/:chapterId/wordMeaning/data", getWordMeaning )
+app.get("/api/:chapterId/wordMeaning/data", getWordMeaning );
+//Getting QA
+app.get("/api/:chapterId/qa/data", QAget);
+
+
+
+
+
+// Save Subject in Database
+app.post("/api/subject/data", postSubject);
+
 // saving chapter data in database
 app.post("/api/:subCode/chapter/data", postChapter);
 
@@ -91,6 +101,10 @@ app.post("/api/:chapterCode/content/data", uploadFields, postContent);
 app.post("/api/:chapterCode/wordMeaning/data", postWordMeaning);
 // Saving Exercise Data from Database
 app.post("/api/:chapterCode/exercise/data",postExercise)
+// Saving QA
+app.post("/api/:chapterId/qa/data", QApost);
+
+
 // deleting Chapter data from database
 app.delete("/api/:subCode/chapter/:chapterId", async (req, res) => {
     try {
