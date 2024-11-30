@@ -2,7 +2,7 @@ const Subject = require("../models/subjectModel")
 
 const getSubject = async (req , res)=>{
     try {
-        const subjectData = await Subject.find({}, { title: 1, code: 1 });
+        const subjectData = await Subject.find();
         if (!subjectData) {
             return res.status(404).json("Data Not found");
         }

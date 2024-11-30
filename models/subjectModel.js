@@ -3,6 +3,7 @@ const subjectSchema = new mongoose.Schema({
     title: String,
     class: String,
     code: String,
+    subPic: String,
     chapters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }] // References to chapters
 });
 

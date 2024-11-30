@@ -1,19 +1,31 @@
 const { User, RefreshToken } = require("../models/userModel")
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const authenticateToken = (req, res, next) => {
-    const token = req.cookies.accessToken
 
-    if (!token) return res.sendStatus(400)
+
+const authenticateToken = (req, res, next) => {
+    const token = req.cookies.accessToken;
+
+    if (!token) {
+        // Gracefully handle the missing token
+        return res.status(401).json({
+            success: false,
+            message: 'Access token is missing. Please log in to access this resource.'
+        });
+    }
 
     jwt.verify(token, process.env.SECRET, (err, user) => {
         if (err) {
-            res.sendStatus(401)
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid or expired token. Please log in again.'
+            });
         }
         req.user = user;
-        next()
-    })
-}
+        next(); // Proceed to the next middleware or route handler
+    });
+};
+
 
 const generateAccessToken = (user) => {
     return jwt.sign(user, process.env.SECRET, { expiresIn: "30m" });

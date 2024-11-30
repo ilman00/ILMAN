@@ -1,12 +1,11 @@
 const QA = require("../models/QAModel");
-const { findOne } = require("../models/subjectModel");
 
 const QAget = async (req, res) => {
     try {
 
-        const chapterId = req.params.chapterIdl;
+        const chapterCode = req.params.chapterCode;
 
-        const chapterData = await findOne({ chapterId: chapterId });
+        const chapterData = await QA.find({ chapterId: chapterCode });
 
         if (!chapterData) {
             res.status(400).json("chapterId not found")

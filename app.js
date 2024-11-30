@@ -5,9 +5,9 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const cors = require("cors");
+const fs = require("fs");
 
 const Subject = require("./models/subjectModel");
-const Exercise = require("./models/exerciseModel");
 const Chapter = require("./models/chapterModel")
 const { postSubject } = require("./routes/postSubject");
 const { getSubject } = require("./routes/getSubject");
@@ -16,7 +16,9 @@ const { getWordMeaning, postWordMeaning } = require("./routes/wordmeaning");
 const {logIn, register,  authenticateToken, logout} = require("./routes/auth");
 const {getContent, postContent} = require("./routes/contents");
 const { getExercise, postExercise } = require('./routes/MCQs');
-const {QAget, QApost} = require("./routes/QA")
+const {QAget, QApost} = require("./routes/QA");
+const cookieParser = require("cookie-parser")
+
 // const jwt = require("jsonwebtoken")
 
 
@@ -25,7 +27,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
-
+app.use(cookieParser())
 
 // const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
 const liveDBString = process.env.DATABASE_STRING;
@@ -38,13 +40,24 @@ const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         const fileType = file.mimetype.split('/')[0]; // Get the file type (image or video)
         let uploadPath;
+        const routPath = req.route.path;
 
         if (fileType === 'image') {
-            uploadPath = 'uploads/images/';
+            if(routPath.includes("content")){
+                uploadPath = "uploads/images/content/"
+            }else if(routPath.includes("subject")){
+
+                uploadPath = 'uploads/images/subject/';
+            }
+
         } else if (fileType === 'video') {
             uploadPath = 'uploads/videos/';
         } else {
             return cb(new Error('File type not supported'), false);
+        }
+
+        if(!fs.existsSync( uploadPath)){
+            fs.mkdirSync(uploadPath, {recursive: true})
         }
 
         cb(null, uploadPath); // Directory where the images will be stored
@@ -66,7 +79,7 @@ app.get("/", (req, res) => {
 })
 
 // Retrieving subject from database
-app.get("/api/subject/data", getSubject );
+app.get("/api/subject/data", authenticateToken, getSubject );
 // Retrieving chapter from database
 app.get("/api/:subjectCode/chapter/data", getChapter);
 // Retrieving Exercise From database
@@ -76,14 +89,14 @@ app.get("/api/:chapterCode/content/data", getContent)
 // Getting Word Meaning
 app.get("/api/:chapterId/wordMeaning/data", getWordMeaning );
 //Getting QA
-app.get("/api/:chapterId/qa/data", QAget);
+app.get("/api/:chapterId/q-a/data", QAget);
 
 
 
 
 
 // Save Subject in Database
-app.post("/api/subject/data", postSubject);
+app.post("/api/subject/data", upload.single("subject") ,postSubject);
 
 // saving chapter data in database
 app.post("/api/:subCode/chapter/data", postChapter);

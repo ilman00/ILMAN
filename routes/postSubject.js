@@ -1,10 +1,12 @@
 
 const Subject = require("../models/subjectModel")
+const path = require("path");
 exports.postSubject =  async (req, res)=>{
     const newSubject = new Subject({
         title: req.body.title,
         class: req.body.class,
-        code: req.body.code
+        code: req.body.code,
+        subPic: req.file ? req.file.path : null
     });
 
     try {
