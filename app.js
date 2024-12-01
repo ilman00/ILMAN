@@ -11,12 +11,12 @@ const Subject = require("./models/subjectModel");
 const Chapter = require("./models/chapterModel")
 const { postSubject } = require("./routes/postSubject");
 const { getSubject } = require("./routes/getSubject");
-const { getChapter, postChapter} = require("./routes/getChapter");
+const { getChapter, postChapter } = require("./routes/getChapter");
 const { getWordMeaning, postWordMeaning } = require("./routes/wordmeaning");
-const {logIn, register,  authenticateToken, logout} = require("./routes/auth");
-const {getContent, postContent} = require("./routes/contents");
+const { logIn, register, authenticateToken, logout } = require("./routes/auth");
+const { getContent, postContent } = require("./routes/contents");
 const { getExercise, postExercise } = require('./routes/MCQs');
-const {QAget, QApost} = require("./routes/QA");
+const { QAget, QApost } = require("./routes/QA");
 const cookieParser = require("cookie-parser")
 
 // const jwt = require("jsonwebtoken")
@@ -24,9 +24,16 @@ const cookieParser = require("cookie-parser")
 
 const app = express();
 
-app.use(cors());
+app.use(
+    cors({
+        origin: '*', // Allow all origins
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        preflightContinue: false,
+        optionsSuccessStatus: 204,
+    })
+);
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser())
 
 // const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
@@ -43,9 +50,9 @@ const storage = multer.diskStorage({
         const routPath = req.route.path;
 
         if (fileType === 'image') {
-            if(routPath.includes("content")){
+            if (routPath.includes("content")) {
                 uploadPath = "uploads/images/content/"
-            }else if(routPath.includes("subject")){
+            } else if (routPath.includes("subject")) {
 
                 uploadPath = 'uploads/images/subject/';
             }
@@ -56,8 +63,8 @@ const storage = multer.diskStorage({
             return cb(new Error('File type not supported'), false);
         }
 
-        if(!fs.existsSync( uploadPath)){
-            fs.mkdirSync(uploadPath, {recursive: true})
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true })
         }
 
         cb(null, uploadPath); // Directory where the images will be stored
@@ -79,7 +86,7 @@ app.get("/", (req, res) => {
 })
 
 // Retrieving subject from database
-app.get("/api/subject/data", authenticateToken, getSubject );
+app.get("/api/subject/data", authenticateToken, getSubject);
 // Retrieving chapter from database
 app.get("/api/:subjectCode/chapter/data", getChapter);
 // Retrieving Exercise From database
@@ -87,7 +94,7 @@ app.get("/api/:chapterCode/exercise/data", getExercise)
 //  Retrieving Content Data from Database
 app.get("/api/:chapterCode/content/data", getContent)
 // Getting Word Meaning
-app.get("/api/:chapterId/wordMeaning/data", getWordMeaning );
+app.get("/api/:chapterId/wordMeaning/data", getWordMeaning);
 //Getting QA
 app.get("/api/:chapterId/q-a/data", QAget);
 
@@ -96,7 +103,7 @@ app.get("/api/:chapterId/q-a/data", QAget);
 
 
 // Save Subject in Database
-app.post("/api/subject/data", upload.single("subject") ,postSubject);
+app.post("/api/subject/data", upload.single("subject"), postSubject);
 
 // saving chapter data in database
 app.post("/api/:subCode/chapter/data", postChapter);
@@ -113,7 +120,7 @@ app.post("/api/:chapterCode/content/data", uploadFields, postContent);
 // Saving word Meaning of English Book in Database
 app.post("/api/:chapterCode/wordMeaning/data", postWordMeaning);
 // Saving Exercise Data from Database
-app.post("/api/:chapterCode/exercise/data",postExercise)
+app.post("/api/:chapterCode/exercise/data", postExercise)
 // Saving QA
 app.post("/api/:chapterId/qa/data", QApost);
 
