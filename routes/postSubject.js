@@ -1,7 +1,7 @@
 
 const Subject = require("../models/subjectModel")
 const path = require("path");
-exports.postSubject =  async (req, res)=>{
+const postSubject =  async (req, res)=>{
     const newSubject = new Subject({
         title: req.body.title,
         class: req.body.class,
