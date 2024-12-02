@@ -1,7 +1,7 @@
 
 const Subject = require("../models/subjectModel")
 const path = require("path");
-const postSubject =  async (req, res)=>{
+exports.postSubject =  async (req, res)=>{
     const newSubject = new Subject({
         title: req.body.title,
         class: req.body.class,
@@ -22,5 +22,3 @@ const postSubject =  async (req, res)=>{
         res.status(400).json({ error: err.message });
     }
 }
-
-module.exports = postSubject
