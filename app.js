@@ -40,7 +40,8 @@ const allowedOrigins = [
         }
       },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true, // Allow cookies and credentials
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'Authorization'],
       preflightContinue: false,
       optionsSuccessStatus: 204,
     })
