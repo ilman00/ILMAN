@@ -25,23 +25,23 @@ const cookieParser = require("cookie-parser")
 const app = express();
 
 const allowedOrigins = [
-    'http://localhost:5173', // Local React app
-    'https://e-digital-pakistan-project.vercel.app/', // Live React app (replace with actual domain)
+    'http://localhost:5173',                  // Local React app
+    'https://e-digital-pakistan-project.vercel.app',  // Live React app
   ];
   
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Check if the incoming origin is in the allowed origins list
         if (allowedOrigins.includes(origin) || !origin) {
           callback(null, true); // Allow the request
         } else {
-          callback(new Error('Not allowed by CORS'), false); // Reject the request
+          callback(new Error('Not allowed by CORS')); // Reject the request
         }
       },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true,
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true, // Allow cookies and credentials
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['Authorization'], // Expose necessary headers
       preflightContinue: false,
       optionsSuccessStatus: 204,
     })
