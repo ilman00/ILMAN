@@ -102,7 +102,7 @@ app.get("/", (req, res) => {
 })
 
 // Retrieving subject from database
-app.get("/api/subject/data", authenticateToken, getSubject);
+app.get("/api/subject/data", getSubject);
 // Retrieving chapter from database
 app.get("/api/:subjectCode/chapter/data", getChapter);
 // Retrieving Exercise From database
