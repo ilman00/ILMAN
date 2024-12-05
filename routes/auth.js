@@ -1,6 +1,7 @@
 const { User, RefreshToken } = require("../models/userModel")
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { findOneAndUpdate } = require("../models/subjectModel");
 
 
 const authenticateToken = (req, res, next) => {
@@ -74,11 +75,10 @@ const register = async (req, res) => {
 
         await saveRefreshToken(newUser._id, refreshToken);
 
-        res.cookie("accessToken", accessToken, { httpOnly: true, secure: true })
-        res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true })
         res.json({
             user: newUser, message: "logged in successfully",
-            accessToken: accessToken
+            accessToken: accessToken,
+            refreshToken: refreshToken
         });
 
 
@@ -104,18 +104,30 @@ const logIn = async (req, res) => {
         // Check for a refresh token for the user
         const tokenVerification = await RefreshToken.findOne({ user_id: userData._id });
         if (!tokenVerification) {
-            return res.status(400).json({ Error: "No refresh token found, please log in again" });
+            return res.status(400).json({ Error: "No refresh token found, please register First" });
         }
         // Verify refresh token
-        jwt.verify(tokenVerification.refresh_token, process.env.REFRESH_SECRET, (err) => {
+        jwt.verify(tokenVerification.refresh_token, process.env.REFRESH_SECRET, async (err) => {
             if (err) {
                 return res.status(400).json({ Error: "Invalid refresh token" });
             }
             // Generate an access token
             const accessToken = generateAccessToken({ user: userData.username });
+
+            const newRefreshToken = generateRefreshToken({user: userData.username})
+
+            const updateToken = await  RefreshToken.findOneAndUpdate({user_id: userData._id}, {refresh_token: newRefreshToken})
+
+            console.log(newRefreshToken);
+            console.log(updateToken);
+
+
             // Set the access token in an HTTP-only secure cookie
-            res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
+            // res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
             // Send a response including user information
+
+            res.setHeader("Authorization", `Bearer ${accessToken}`)
+            res.setHeader("Refresh-Token", newRefreshToken);
             res.json({
                 Success: "User logged in successfully",
                 user: {
@@ -123,15 +135,34 @@ const logIn = async (req, res) => {
                     username: userData.username,
                     email: userData.email, // or other public fields you want to share
                 },
-                accessToken: accessToken
+                accessToken: accessToken,
+                resfreshToken: newRefreshToken
             });
         });
     } catch (err) {
         res.status(500).json({ Error: "Internal server error during login: " + err });
     }
 }
-const logout = (req, res) => {
-    res.clearCookie("accessToken", { httpOnly: true, secure: true });
-    res.json({ message: "User logged out successfully" });
-}
+const logout = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ message: "No token provided" });
+        }
+
+        // Decode token to find the user (optional, based on your app)
+        const decoded = jwt.verify(token, process.env.SECRET);
+
+        // Remove the refresh token from the database
+        await RefreshToken.deleteOne({ user_id: decoded.user_id });
+
+        res.json({ message: "User logged out successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error during logout" });
+    }
+};
+
+
 module.exports = { logIn, register, authenticateToken, logout }

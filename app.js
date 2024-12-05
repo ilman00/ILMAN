@@ -52,9 +52,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser())
 
-// const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
-const liveDBString = process.env.DATABASE_STRING;
-mongoose.connect(liveDBString);
+const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
+// const liveDBString = process.env.DATABASE_STRING;
+mongoose.connect(dbString);
 
 
 
@@ -102,7 +102,7 @@ app.get("/", (req, res) => {
 })
 
 // Retrieving subject from database
-app.get("/api/subject/data", getSubject);
+app.get("/api/:classNumber/subject/data", getSubject);
 // Retrieving chapter from database
 app.get("/api/:subjectCode/chapter/data", getChapter);
 // Retrieving Exercise From database
