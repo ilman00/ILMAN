@@ -1,7 +1,6 @@
 const { User, RefreshToken } = require("../models/userModel")
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { findOneAndUpdate } = require("../models/subjectModel");
 
 
 const authenticateToken = (req, res, next) => {
