@@ -17,12 +17,13 @@ const { logIn, register, authenticateToken, logout } = require("./routes/auth");
 const { getContent, postContent } = require("./routes/contents");
 const { getExercise, postExercise } = require('./routes/MCQs');
 const { QAget, QApost } = require("./routes/QA");
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
 
 // const jwt = require("jsonwebtoken")
 
 
 const app = express();
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const allowedOrigins = [
     'http://localhost:5173',                  // Local React app
@@ -52,9 +53,9 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser())
 
-// const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
-const liveDBString = process.env.DATABASE_STRING;
-mongoose.connect(liveDBString);
+const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
+// const liveDBString = process.env.DATABASE_STRING;
+mongoose.connect(dbString);
 
 
 
@@ -113,7 +114,6 @@ app.get("/api/:chapterCode/content/data", getContent)
 app.get("/api/:chapterId/wordMeaning/data", getWordMeaning);
 //Getting QA
 app.get("/api/:chapterId/q-a/data", QAget);
-
 
 
 
