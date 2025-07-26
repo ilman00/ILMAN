@@ -1,7 +1,7 @@
 const Subject = require("../models/subjectModel")
 const Chapter = require("../models/chapterModel")
 
-const getChapter = async (req, res)=>{
+const getChapter = async (req, res) => {
     try {
         const subjectCode = req.params.subjectCode;
         const subData = await Subject.findOne({ code: subjectCode }, { chapters: 1 });
@@ -18,11 +18,35 @@ const getChapter = async (req, res)=>{
     }
 }
 
-const postChapter = async (req, res)=>{
+let lowerCaseChapter = ""
+let lowerCaseName = ""
+
+const postChapter = async (req, res) => {
     try {
         const subCode = req.params.subCode;
         const name = req.body.chapName;
-        const chapterCode = req.body.chapterCode;
+
+        const chapterChecking = await Chapter.find({ subjectCode: subCode });
+        // console.log(chapterChecking);
+
+
+       
+
+        for (let i = 0; i < chapterChecking.length; i++) {
+            console.log(chapterChecking[i]);
+            lowerCaseChapter = chapterChecking[i].name.toLowerCase()
+            console.log(lowerCaseChapter);
+            lowerCaseName = name.toLowerCase()
+            if (lowerCaseChapter === lowerCaseName) {
+                return res.json({ Error: "Chapter already Exist" })
+            }
+        }
+
+        const chapterArrayLength = chapterChecking.length + 1;
+
+        const chapterCode = subCode + "CH" + chapterArrayLength;
+
+        console.log(chapterCode);
 
         // Save the new chapter
         const newChapter = new Chapter({
@@ -32,11 +56,9 @@ const postChapter = async (req, res)=>{
         });
 
         const result = await newChapter.save();
-        console.log("Chapter saved:", result);
 
         // Find the subject by code
         const subResult = await Subject.findOne({ code: subCode });
-        console.log("Subject Result:", subResult);
 
         if (!subResult) {
             return res.status(404).json({ error: "Subject not found" });

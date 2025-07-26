@@ -5,7 +5,7 @@ const QAget = async (req, res) => {
 
         const chapterCode = req.params.chapterCode;
 
-        const chapterData = await QA.find({ chapterId: chapterCode });
+        const chapterData = await QA.find({ chapterCode: chapterCode });
 
         if (!chapterData) {
             res.status(400).json("chapterId not found")
@@ -21,7 +21,7 @@ const QApost = async (req, res) => {
     try {
 
         const newQA = new QA({
-            chapterId: req.params.chapterId,
+            chapterCode: req.params.chapterCode,
             question: req.body.question,
             answer: req.body.answer
 

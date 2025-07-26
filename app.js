@@ -9,15 +9,13 @@ const fs = require("fs");
 
 const Subject = require("./models/subjectModel");
 const Chapter = require("./models/chapterModel")
-const { postSubject } = require("./routes/postSubject");
-const { getSubject } = require("./routes/getSubject");
+const { getSubject, postSubject } = require("./routes/Subject");
 const { getChapter, postChapter } = require("./routes/getChapter");
 const { getWordMeaning, postWordMeaning } = require("./routes/wordmeaning");
 const { logIn, register, authenticateToken, logout } = require("./routes/auth");
 const { getContent, postContent } = require("./routes/contents");
 const { getExercise, postExercise } = require('./routes/MCQs');
 const { QAget, QApost } = require("./routes/QA");
-const cookieParser = require("cookie-parser");
 
 // const jwt = require("jsonwebtoken")
 
@@ -25,37 +23,38 @@ const cookieParser = require("cookie-parser");
 const app = express();
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+
 const allowedOrigins = [
-    'http://localhost:5173',                  // Local React app
-    'https://e-digital-pakistan-project.vercel.app',  // Live React app
-  ];
-  
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        if (allowedOrigins.includes(origin) || !origin) {
-          callback(null, true); // Allow the request
+    'https://dalp.digipakistan.com',
+    'https://e-digital-pakistan-project.vercel.app',
+    'http://localhost:5173'
+];
+
+// Custom CORS configuration
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g., mobile apps, curl)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
         } else {
-          callback(new Error('Not allowed by CORS')); // Reject the request
+            callback(new Error('Not allowed by CORS'));
         }
-      },
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      credentials: true, // Allow cookies and credentials
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-      exposedHeaders: ['Authorization'], // Expose necessary headers
-      preflightContinue: false,
-      optionsSuccessStatus: 204,
-    })
-  );
-  
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+    credentials: true, // Allow cookies and credentials
+};
 
-app.use(bodyParser.json());
+app.use(cors(corsOptions))
+
+app.options('*', cors(corsOptions));
+
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser())
 
-// const dbString ="mongodb://127.0.0.1:27017/NEW_LMS";
-const liveDBString = process.env.DATABASE_STRING;
-mongoose.connect(liveDBString);
+const dbString = "mongodb://127.0.0.1:27017/NEW_LMS";
+// const dbString = process.env.DATABASE_STRING;
+mongoose.connect(dbString);
 
 
 
@@ -102,8 +101,7 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/course.html");
 })
 
-// Retrieving subject from database
-app.get("/api/:classNumber/subject/data", getSubject);
+app.get("/api/:classNumber/subject/data", getSubject)
 // Retrieving chapter from database
 app.get("/api/:subjectCode/chapter/data", getChapter);
 // Retrieving Exercise From database
@@ -113,7 +111,7 @@ app.get("/api/:chapterCode/content/data", getContent)
 // Getting Word Meaning
 app.get("/api/:chapterId/wordMeaning/data", getWordMeaning);
 //Getting QA
-app.get("/api/:chapterId/q-a/data", QAget);
+app.get("/api/:chapterCode/qa/data", QAget);
 
 
 
@@ -138,7 +136,7 @@ app.post("/api/:chapterCode/wordMeaning/data", postWordMeaning);
 // Saving Exercise Data from Database
 app.post("/api/:chapterCode/exercise/data", postExercise)
 // Saving QA
-app.post("/api/:chapterId/qa/data", QApost);
+app.post("/api/:chapterCode/qa/data", QApost);
 
 
 // deleting Chapter data from database

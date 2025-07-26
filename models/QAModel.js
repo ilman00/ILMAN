@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const QASchema = new mongoose.Schema({
-    chapterId: String,
+    chapterCode: String,
     question: String,
     answer: String
 });
